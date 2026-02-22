@@ -1,7 +1,6 @@
 baseURL = 'https://krillnotes.com/'
 languageCode = 'en-us'
 title = 'Krillnotes'
-theme = ''
 
 [params]
   description = 'A local-first, hierarchical note-taking app. Scriptable, cross-platform, and yours.'
