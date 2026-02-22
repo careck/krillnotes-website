@@ -1,0 +1,15 @@
+{{ define "main" }}
+<article class="docs-layout">
+  <h1>{{ .Title }}</h1>
+  {{ with .Params.description }}<p class="docs-description">{{ . }}</p>{{ end }}
+  <div class="docs-content">
+    {{ .Content }}
+    {{ range .Pages }}
+    <div style="margin-bottom: var(--space-md);">
+      <a href="{{ .RelPermalink }}"><strong>{{ .Title }}</strong></a>
+      {{ with .Params.description }}<br><span style="color: var(--sand-400); font-size: 0.9rem;">{{ . }}</span>{{ end }}
+    </div>
+    {{ end }}
+  </div>
+</article>
+{{ end }}

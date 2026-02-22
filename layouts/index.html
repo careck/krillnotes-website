@@ -1,0 +1,172 @@
+{{ define "main" }}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-bubbles">
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+  </div>
+  <div class="hero-content">
+    <img src="{{ "images/krillnotesbanner.png" | relURL }}" alt="Krillnotes banner" class="hero-banner">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Open source &middot; MIT License
+    </div>
+    <h1>Notes that <span class="highlight">swim</span> the way you think</h1>
+    <p class="hero-description">
+      A local-first, hierarchical note-taking app built with Rust.
+      Define your own note types with scripts, organize in infinite trees,
+      and keep everything on your device.
+    </p>
+    <div class="hero-actions">
+      <a href="{{ .Site.Params.github }}/releases" class="btn btn-primary">
+        🦐 Download for free
+      </a>
+      <a href="{{ .Site.Params.github }}" class="btn btn-secondary">
+        View on GitHub
+      </a>
+    </div>
+    <!--
+    <div class="hero-screenshot">
+      <img src="/images/screenshot.png" alt="Krillnotes app screenshot">
+    </div>
+    -->
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-header">
+    <span class="section-label">Features</span>
+    <h2>Small creature, big capabilities</h2>
+    <p>Everything you need to organize your world, nothing you don't.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🌊</div>
+      <h3>Hierarchical notes</h3>
+      <p>Organize notes in an infinite tree. Each note can have children, with configurable sort order — alphabetical or manual positioning.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🦐</div>
+      <h3>Typed note schemas</h3>
+      <p>Define custom note types with Rhai scripts. Fields support text, numbers, dates, booleans, selects, ratings, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🐚</div>
+      <h3>User scripts</h3>
+      <p>Each workspace stores its own Rhai scripts. Create, edit, enable, and reorder scripts from the built-in script manager.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🪸</div>
+      <h3>On-save hooks</h3>
+      <p>Scripts can compute derived fields automatically — auto-generate titles, calculate durations, or set status badges on save.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>Fuzzy search</h3>
+      <p>Live search with debounced fuzzy matching across titles and text fields. Keyboard-navigable results that scroll into view.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📦</div>
+      <h3>Export &amp; Import</h3>
+      <p>Export an entire workspace as a .zip archive. Import into a new workspace with version-compatibility checks.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Local-first</h3>
+      <p>All data lives in a single .krillnotes file on disk. No account, no cloud dependency, no internet connection required.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💻</div>
+      <h3>Cross-platform</h3>
+      <p>Runs on macOS, Linux, and Windows via Tauri v2. Native performance backed by Rust and SQLite.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Operations log</h3>
+      <p>Every mutation is recorded in an immutable log — browse history, filter by type or date, and purge old entries.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="tech-stack">
+  <div class="section-header">
+    <span class="section-label">Built with</span>
+    <h2>Solid foundations, tiny footprint</h2>
+    <p>Modern tools chosen for speed, reliability, and cross-platform reach.</p>
+  </div>
+  <div class="tech-pills">
+    <span class="tech-pill"><span class="tech-pill-icon">🦀</span> Rust</span>
+    <span class="tech-pill"><span class="tech-pill-icon">⚛️</span> React</span>
+    <span class="tech-pill"><span class="tech-pill-icon">🪟</span> Tauri v2</span>
+    <span class="tech-pill"><span class="tech-pill-icon">🗄️</span> SQLite</span>
+    <span class="tech-pill"><span class="tech-pill-icon">📜</span> Rhai scripting</span>
+  </div>
+</section>
+
+<!-- Scripting Preview -->
+<section class="scripting-preview">
+  <div class="scripting-content">
+    <div class="scripting-text">
+      <span class="section-label">Extensible</span>
+      <h2>Your notes, your types, your rules</h2>
+      <p>Define custom note schemas with Rhai scripts. Add fields, hooks, and computed values — no recompilation needed.</p>
+      <ul>
+        <li>Define schemas with typed fields (text, date, select, rating...)</li>
+        <li>Auto-derive titles and computed fields with on_save hooks</li>
+        <li>Custom view rendering with on_view hooks</li>
+        <li>Query notes by type, filter, and aggregate</li>
+        <li>Six example scripts ship out of the box</li>
+      </ul>
+      <a href="/docs/scripting/" class="btn btn-secondary" style="margin-top: var(--space-lg);">
+        Read the Scripting Guide →
+      </a>
+    </div>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-dot"></span>
+        <span class="code-dot"></span>
+        <span class="code-dot"></span>
+        <span class="code-block-title">task.rhai</span>
+      </div>
+      <pre><code><span class="code-function">schema</span>(<span class="code-string">"Task"</span>, #{
+    <span class="code-field">title_can_edit</span>: <span class="code-value">false</span>,
+    <span class="code-field">fields</span>: [
+        #{ <span class="code-field">name</span>: <span class="code-string">"name"</span>,   <span class="code-field">type</span>: <span class="code-string">"text"</span>,   <span class="code-field">required</span>: <span class="code-value">true</span>  },
+        #{ <span class="code-field">name</span>: <span class="code-string">"status"</span>, <span class="code-field">type</span>: <span class="code-string">"select"</span>,
+           <span class="code-field">options</span>: [<span class="code-string">"TODO"</span>, <span class="code-string">"WIP"</span>, <span class="code-string">"DONE"</span>] },
+        #{ <span class="code-field">name</span>: <span class="code-string">"due_date"</span>, <span class="code-field">type</span>: <span class="code-string">"date"</span> },
+    ]
+});
+
+<span class="code-function">on_save</span>(<span class="code-string">"Task"</span>, |<span class="code-field">note</span>| {
+    <span class="code-keyword">let</span> status <span class="code-operator">=</span> note.fields[<span class="code-string">"status"</span>];
+    <span class="code-keyword">let</span> symbol <span class="code-operator">=</span> <span class="code-keyword">if</span> status <span class="code-operator">==</span> <span class="code-string">"DONE"</span> { <span class="code-string">"✓"</span> }
+        <span class="code-keyword">else if</span> status <span class="code-operator">==</span> <span class="code-string">"WIP"</span> { <span class="code-string">"→"</span> }
+        <span class="code-keyword">else</span> { <span class="code-string">" "</span> };
+    note.title <span class="code-operator">=</span> <span class="code-string">"["</span> <span class="code-operator">+</span> symbol <span class="code-operator">+</span> <span class="code-string">"] "</span> <span class="code-operator">+</span> note.fields[<span class="code-string">"name"</span>];
+    note
+});</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-box">
+    <img src="{{ "images/krillnoteslogo.png" | relURL }}" alt="Krillnotes" class="cta-logo">
+    <h2>Ready to dive in?</h2>
+    <p>Krillnotes is free, open source, and ready for your notes.</p>
+    <a href="{{ .Site.Params.github }}/releases" class="btn btn-primary">
+      Download Krillnotes
+    </a>
+  </div>
+</section>
+
+{{ end }}
