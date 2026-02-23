@@ -28,13 +28,13 @@ User scripts are managed through **Settings → Scripts**. The bundled system sc
 
 ## 1. Script structure
 
-A script file is plain Rhai. The top-level calls available are:
+A script file is plain Rhai. The top-level call available is:
 
 | Call | Purpose |
 |---|---|
-| `schema(name, def)` | Register a note type |
-| `on_save(name, fn)` | Hook that runs whenever a note of that type is saved |
-| `on_view(name, fn)` | Hook that runs when a note of that type is displayed |
+| `schema(name, def)` | Register a note type, with optional inline hooks |
+
+Hooks (`on_save`, `on_view`) are defined as keys directly inside the map passed to `schema()` — not as separate top-level calls.
 
 A minimal script that defines a type:
 
@@ -47,7 +47,7 @@ schema("Snippet", #{
 });
 ```
 
-A script can contain any number of `schema()`, `on_save()`, and `on_view()` calls. It is conventional to keep related types together in a single file.
+A script can contain any number of `schema()` calls. It is conventional to keep related types together in a single file.
 
 ---
 
@@ -66,7 +66,11 @@ schema("TypeName", #{
     fields: [
         #{ name: "field_name", type: "text", required: true },
         // … more fields …
-    ]
+    ],
+
+    // --- optional hooks ---
+    on_save: |note| { /* … */ note },
+    on_view: |note| { /* … */ text("") },
 });
 ```
 
@@ -95,7 +99,7 @@ Each entry in `fields` is a map:
 | Type | Storage | Notes |
 |---|---|---|
 | `"text"` | String | Single-line text input |
-| `"textarea"` | String | Multi-line text input |
+| `"textarea"` | String | Multi-line text input; rendered as Markdown in the default view |
 | `"number"` | Float | Numeric input |
 | `"boolean"` | Bool | Checkbox |
 | `"date"` | String (ISO `YYYY-MM-DD`) or `null` | Date picker |
@@ -156,21 +160,24 @@ allowed_children_types: ["Contact"],
 
 ## 5. on_save hook
 
-The `on_save` hook runs every time a note of the given type is saved. It receives the note as a mutable map and must return the (possibly modified) note.
+The `on_save` hook runs every time a note of the given type is saved. It receives the note as a mutable map and must return the (possibly modified) note. It is defined as an `on_save` key inside the `schema()` map.
 
 ```rhai
-on_save("TypeName", |note| {
-    // read fields
-    let name = note.fields["name"];
+schema("TypeName", #{
+    fields: [ /* … */ ],
+    on_save: |note| {
+        // read fields
+        let name = note.fields["name"];
 
-    // write derived fields
-    note.fields["summary"] = "Hello, " + name;
+        // write derived fields
+        note.fields["summary"] = "Hello, " + name;
 
-    // set the title
-    note.title = name;
+        // set the title
+        note.title = name;
 
-    // always return note
-    note
+        // always return note
+        note
+    }
 });
 ```
 
@@ -186,47 +193,56 @@ on_save("TypeName", |note| {
 ### Example — derived title and computed field
 
 ```rhai
-on_save("Book", |note| {
-    let title  = note.fields["book_title"];
-    let author = note.fields["author"];
-    note.title = if author != "" && title != "" {
-        author + ": " + title
-    } else if title != "" {
-        title
-    } else {
-        "Untitled Book"
-    };
-    note
+schema("Book", #{
+    fields: [ /* … */ ],
+    on_save: |note| {
+        let title  = note.fields["book_title"];
+        let author = note.fields["author"];
+        note.title = if author != "" && title != "" {
+            author + ": " + title
+        } else if title != "" {
+            title
+        } else {
+            "Untitled Book"
+        };
+        note
+    }
 });
 ```
 
 ### Example — status badge
 
 ```rhai
-on_save("Task", |note| {
-    let status = note.fields["status"];
-    let symbol = if status == "DONE" { "✓" }
-                 else if status == "WIP"  { "→" }
-                 else { " " };
-    note.title = "[" + symbol + "] " + note.fields["name"];
-    note
+schema("Task", #{
+    fields: [ /* … */ ],
+    on_save: |note| {
+        let status = note.fields["status"];
+        let symbol = if status == "DONE" { "✓" }
+                     else if status == "WIP"  { "→" }
+                     else { " " };
+        note.title = "[" + symbol + "] " + note.fields["name"];
+        note
+    }
 });
 ```
 
 ### Example — numeric derived field
 
 ```rhai
-on_save("Recipe", |note| {
-    let total = (note.fields["prep_time"] + note.fields["cook_time"]).to_int();
-    note.fields["total_time"] = if total <= 0 { "" }
-        else if total < 60  { total.to_string() + " min" }
-        else {
-            let h = total / 60;
-            let m = total % 60;
-            if m == 0 { h.to_string() + "h" }
-            else      { h.to_string() + "h " + m.to_string() + "min" }
-        };
-    note
+schema("Recipe", #{
+    fields: [ /* … */ ],
+    on_save: |note| {
+        let total = (note.fields["prep_time"] + note.fields["cook_time"]).to_int();
+        note.fields["total_time"] = if total <= 0 { "" }
+            else if total < 60  { total.to_string() + " min" }
+            else {
+                let h = total / 60;
+                let m = total % 60;
+                if m == 0 { h.to_string() + "h" }
+                else      { h.to_string() + "h " + m.to_string() + "min" }
+            };
+        note
+    }
 });
 ```
 
@@ -234,28 +250,45 @@ on_save("Recipe", |note| {
 
 ## 6. on_view hook
 
-The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#7-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally.
+The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#7-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally. It is defined as an `on_view` key inside the `schema()` map.
 
 ```rhai
-on_view("TypeName", |note| {
-    // build and return HTML using display helpers
-    text("Hello from " + note.title)
+schema("TypeName", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        // build and return HTML using display helpers
+        text("Hello from " + note.title)
+    }
 });
 ```
 
-When no `on_view` hook is registered, the view panel falls back to the standard field grid.
+When no `on_view` hook is registered, the view panel falls back to the standard field grid, where `textarea` fields are rendered as Markdown automatically.
+
+Inside an `on_view` hook, field values are returned as raw strings. Use the `markdown()` display helper to render them as Markdown:
+
+```rhai
+schema("MyNote", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        markdown(note.fields["body"] ?? "")
+    }
+});
+```
 
 ### Early return
 
 Return early for edge cases:
 
 ```rhai
-on_view("ContactsFolder", |note| {
-    let contacts = get_children(note.id);
-    if contacts.len() == 0 {
-        return text("No contacts yet.");
+schema("ContactsFolder", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        let contacts = get_children(note.id);
+        if contacts.len() == 0 {
+            return text("No contacts yet.");
+        }
+        // … rest of the hook …
     }
-    // … rest of the hook …
 });
 ```
 
@@ -264,13 +297,16 @@ on_view("ContactsFolder", |note| {
 Display helpers return strings; compose them by nesting or with `stack`:
 
 ```rhai
-on_view("MyType", |note| {
-    stack([
-        heading("Overview"),
-        field("Status", note.fields["status"] ?? "-"),
-        divider(),
-        section("Notes", text(note.fields["notes"] ?? ""))
-    ])
+schema("MyType", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        stack([
+            heading("Overview"),
+            field("Status", note.fields["status"] ?? "-"),
+            divider(),
+            section("Notes", text(note.fields["notes"] ?? ""))
+        ])
+    }
 });
 ```
 
@@ -282,10 +318,18 @@ All helpers return an HTML string. All user-supplied text is HTML-escaped automa
 
 ### `text(content)`
 
-Whitespace-preserving paragraph. Use for multi-line text fields.
+Whitespace-preserving paragraph. Use for plain multi-line text.
 
 ```rhai
 text("Line one\nLine two")
+```
+
+### `markdown(content)`
+
+Renders a Markdown string as HTML. Use this in `on_view` hooks when displaying `textarea` fields that contain Markdown (the default view renders them automatically, but `on_view` hooks receive raw strings).
+
+```rhai
+markdown(note.fields["body"] ?? "")
 ```
 
 ### `heading(text)`
@@ -379,6 +423,15 @@ A colored pill badge. Supported colors: `"red"`, `"green"`, `"blue"`, `"yellow"`
 badge("High",   "red")
 badge("Done",   "green")
 badge("Paused", "yellow")
+```
+
+### `link_to(note)`
+
+A clickable link that navigates to the given note. Useful inside `on_view` hooks that query related notes.
+
+```rhai
+link_to(note)
+link_to(c)   // where c is a note from get_children() or get_notes_of_type()
 ```
 
 ### `divider()`
@@ -525,12 +578,11 @@ When the title is always derived from fields, disable direct title editing to av
 ```rhai
 schema("Contact", #{
     title_can_edit: false,
-    fields: [ /* … */ ]
-});
-
-on_save("Contact", |note| {
-    note.title = note.fields["last_name"] + ", " + note.fields["first_name"];
-    note
+    fields: [ /* … */ ],
+    on_save: |note| {
+        note.title = note.fields["last_name"] + ", " + note.fields["first_name"];
+        note
+    }
 });
 ```
 
@@ -572,33 +624,32 @@ schema("TextNote", #{
 schema("Task", #{
     title_can_edit: false,
     fields: [
-        #{ name: "name",           type: "text",   required: true                  },
-        #{ name: "status",         type: "select", required: true,
-           options: ["TODO", "WIP", "DONE"]                                         },
-        #{ name: "priority",       type: "select", required: false,
-           options: ["low", "medium", "high"]                                       },
-        #{ name: "due_date",       type: "date",   required: false                 },
-        #{ name: "assignee",       type: "text",   required: false                 },
-        #{ name: "notes",          type: "textarea", required: false               },
-        #{ name: "priority_label", type: "text",   required: false, can_edit: false },
-    ]
-});
+        #{ name: "name",           type: "text",     required: true                     },
+        #{ name: "status",         type: "select",   required: true,
+           options: ["TODO", "WIP", "DONE"]                                             },
+        #{ name: "priority",       type: "select",   required: false,
+           options: ["low", "medium", "high"]                                           },
+        #{ name: "due_date",       type: "date",     required: false                    },
+        #{ name: "assignee",       type: "text",     required: false                    },
+        #{ name: "notes",          type: "textarea", required: false                    },
+        #{ name: "priority_label", type: "text",     required: false, can_edit: false   },
+    ],
+    on_save: |note| {
+        let name   = note.fields["name"];
+        let status = note.fields["status"];
+        let symbol = if status == "DONE" { "✓" }
+                     else if status == "WIP" { "→" }
+                     else { " " };
+        note.title = "[" + symbol + "] " + name;
 
-on_save("Task", |note| {
-    let name   = note.fields["name"];
-    let status = note.fields["status"];
-    let symbol = if status == "DONE" { "✓" }
-                 else if status == "WIP" { "→" }
-                 else { " " };
-    note.title = "[" + symbol + "] " + name;
-
-    let priority = note.fields["priority"];
-    note.fields["priority_label"] =
-        if priority == "high"        { "🔴 High" }
-        else if priority == "medium" { "🟡 Medium" }
-        else if priority == "low"    { "🟢 Low" }
-        else                         { "" };
-    note
+        let priority = note.fields["priority"];
+        note.fields["priority_label"] =
+            if priority == "high"        { "🔴 High" }
+            else if priority == "medium" { "🟡 Medium" }
+            else if priority == "low"    { "🟢 Low" }
+            else                         { "" };
+        note
+    }
 });
 ```
 
@@ -610,7 +661,29 @@ schema("ContactsFolder", #{
     allowed_children_types: ["Contact"],
     fields: [
         #{ name: "notes", type: "textarea", required: false },
-    ]
+    ],
+    on_view: |note| {
+        let contacts = get_children(note.id);
+        if contacts.len() == 0 {
+            return text("No contacts yet. Add a contact using the context menu.");
+        }
+        let rows = contacts.map(|c| [
+            link_to(c),
+            c.fields["email"]  ?? "-",
+            c.fields["phone"]  ?? "-",
+            c.fields["mobile"] ?? "-"
+        ]);
+        let contacts_section = section(
+            "Contacts (" + contacts.len() + ")",
+            table(["Name", "Email", "Phone", "Mobile"], rows)
+        );
+        let notes_val = note.fields["notes"] ?? "";
+        if notes_val == "" {
+            contacts_section
+        } else {
+            stack([contacts_section, section("Notes", text(notes_val))])
+        }
+    }
 });
 
 schema("Contact", #{
@@ -624,38 +697,14 @@ schema("Contact", #{
         #{ name: "mobile",          type: "text",    required: false },
         #{ name: "birthdate",       type: "date",    required: false },
         #{ name: "is_family",       type: "boolean", required: false },
-    ]
-});
-
-on_save("Contact", |note| {
-    let last  = note.fields["last_name"];
-    let first = note.fields["first_name"];
-    if last != "" || first != "" {
-        note.title = last + ", " + first;
-    }
-    note
-});
-
-on_view("ContactsFolder", |note| {
-    let contacts = get_children(note.id);
-    if contacts.len() == 0 {
-        return text("No contacts yet. Add a contact using the context menu.");
-    }
-    let rows = contacts.map(|c| [
-        c.title,
-        c.fields["email"]  ?? "-",
-        c.fields["phone"]  ?? "-",
-        c.fields["mobile"] ?? "-"
-    ]);
-    let contacts_section = section(
-        "Contacts (" + contacts.len() + ")",
-        table(["Name", "Email", "Phone", "Mobile"], rows)
-    );
-    let notes_val = note.fields["notes"] ?? "";
-    if notes_val == "" {
-        contacts_section
-    } else {
-        stack([contacts_section, section("Notes", text(notes_val))])
+    ],
+    on_save: |note| {
+        let last  = note.fields["last_name"];
+        let first = note.fields["first_name"];
+        if last != "" || first != "" {
+            note.title = last + ", " + first;
+        }
+        note
     }
 });
 ```
