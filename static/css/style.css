@@ -914,6 +914,14 @@ img {
   text-decoration-color: var(--krill-primary);
 }
 
+.docs-content img {
+  display: block;
+  margin: var(--space-xl) auto;
+  max-width: 720px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
 /* ---- Footer ---- */
 
 .site-footer {
