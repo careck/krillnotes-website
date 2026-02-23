@@ -140,16 +140,15 @@
         #{ <span class="code-field">name</span>: <span class="code-string">"status"</span>, <span class="code-field">type</span>: <span class="code-string">"select"</span>,
            <span class="code-field">options</span>: [<span class="code-string">"TODO"</span>, <span class="code-string">"WIP"</span>, <span class="code-string">"DONE"</span>] },
         #{ <span class="code-field">name</span>: <span class="code-string">"due_date"</span>, <span class="code-field">type</span>: <span class="code-string">"date"</span> },
-    ]
-});
-
-<span class="code-function">on_save</span>(<span class="code-string">"Task"</span>, |<span class="code-field">note</span>| {
-    <span class="code-keyword">let</span> status <span class="code-operator">=</span> note.fields[<span class="code-string">"status"</span>];
-    <span class="code-keyword">let</span> symbol <span class="code-operator">=</span> <span class="code-keyword">if</span> status <span class="code-operator">==</span> <span class="code-string">"DONE"</span> { <span class="code-string">"✓"</span> }
-        <span class="code-keyword">else if</span> status <span class="code-operator">==</span> <span class="code-string">"WIP"</span> { <span class="code-string">"→"</span> }
-        <span class="code-keyword">else</span> { <span class="code-string">" "</span> };
-    note.title <span class="code-operator">=</span> <span class="code-string">"["</span> <span class="code-operator">+</span> symbol <span class="code-operator">+</span> <span class="code-string">"] "</span> <span class="code-operator">+</span> note.fields[<span class="code-string">"name"</span>];
-    note
+    ],
+    <span class="code-field">on_save</span>: |<span class="code-field">note</span>| {
+        <span class="code-keyword">let</span> status <span class="code-operator">=</span> note.fields[<span class="code-string">"status"</span>];
+        <span class="code-keyword">let</span> symbol <span class="code-operator">=</span> <span class="code-keyword">if</span> status <span class="code-operator">==</span> <span class="code-string">"DONE"</span> { <span class="code-string">"✓"</span> }
+            <span class="code-keyword">else if</span> status <span class="code-operator">==</span> <span class="code-string">"WIP"</span> { <span class="code-string">"→"</span> }
+            <span class="code-keyword">else</span> { <span class="code-string">" "</span> };
+        note.title <span class="code-operator">=</span> <span class="code-string">"["</span> <span class="code-operator">+</span> symbol <span class="code-operator">+</span> <span class="code-string">"] "</span> <span class="code-operator">+</span> note.fields[<span class="code-string">"name"</span>];
+        note
+    }
 });</code></pre>
     </div>
   </div>
