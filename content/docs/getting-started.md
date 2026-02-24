@@ -8,7 +8,7 @@ weight: 1
 
 Krillnotes is a local-first, hierarchical note-taking application. Notes live in a tree, each note has a schema-defined type, and every change is recorded in an operation log — laying the groundwork for offline-first sync.
 
-Built with **Rust**, **Tauri v2**, **React**, and **SQLite**.
+Built with **Rust**, **Tauri v2**, **React**, **SQLite**, and **SQLCipher**.
 
 ---
 
@@ -19,14 +19,14 @@ Built with **Rust**, **Tauri v2**, **React**, and **SQLite**.
 - **User scripts** — Each workspace stores its own Rhai scripts in the database. Create, edit, enable/disable, reorder, and delete scripts from a built-in script manager — no file system access required. Six example scripts ship in the `user_scripts/` folder (Task, Book, Contact, Product, Recipe, Project).
 - **On-save hooks** — Rhai scripts can register `on_save` hooks that compute derived fields (e.g. auto-generating a note title from first name + last name, calculating a read duration, or setting a status badge).
 - **Search** — A live search bar with debounced fuzzy matching across note titles and all text fields. Keyboard-navigable results; selecting a match expands collapsed ancestors and scrolls the note into view.
-- **Export / Import** — Export an entire workspace as a `.zip` archive (notes + user scripts). Import a zip into a new workspace, with version-compatibility checks before importing.
+- **Export / Import** — Export an entire workspace as a `.zip` archive (notes + user scripts), optionally password-protected with AES-256 encryption. Import a zip into a new workspace; encrypted archives are detected automatically.
 - **Operations log viewer** — Browse the full mutation history, filter by operation type or date range, and purge old entries to reclaim space.
 - **Operation log** — Every mutation (create, update, move, delete, script changes) is appended to an immutable log before being applied, enabling future undo/redo and device sync.
 - **Tree keyboard navigation** — Arrow keys to move between nodes, Right/Left to expand/collapse, Enter to edit the selected note.
 - **Resizable panels** — Drag the divider between the tree and the detail panel to resize.
 - **Context menu** — Right-click on any tree node for quick actions (Add Note, Edit, Delete).
 - **Multi-window** — Open multiple workspaces simultaneously, each in its own window.
-- **Local-first** — All data is stored in a single `.krillnotes` file on disk. No account, no cloud dependency, no internet connection required.
+- **Encrypted & local-first** — All data is stored in a single `.krillnotes` file on disk, encrypted with AES-256 via SQLCipher. A password is required to create or open each workspace. No account, no cloud dependency, no internet connection required.
 - **Cross-platform** — Runs on macOS, Linux, and Windows via Tauri.
 
 ---
@@ -76,7 +76,7 @@ cargo test -p krillnotes-core
 
 ## File Format
 
-Each workspace is a single SQLite database with the `.krillnotes` extension. The file contains four tables:
+Each workspace is a single SQLCipher database with the `.krillnotes` extension, encrypted with AES-256. The file contains four tables:
 
 | Table            | Purpose                                                |
 |------------------|--------------------------------------------------------|
@@ -85,7 +85,7 @@ Each workspace is a single SQLite database with the `.krillnotes` extension. The
 | `workspace_meta` | Per-device metadata (device ID, selection state)        |
 | `user_scripts`   | Per-workspace Rhai scripts (id, name, source code, load order, enabled flag) |
 
-The file is a standard SQLite 3 database and can be opened with any SQLite browser for inspection or backup.
+The file uses the SQLCipher format (AES-256 encrypted SQLite). It can be opened with SQLCipher-compatible tools using the workspace password.
 
 ---
 
