@@ -388,10 +388,13 @@ schema("ContactsFolder", #{
 Return `()` or an empty map to leave both notes unchanged:
 
 ```rhai
-on_add_child: |parent_note, child_note| {
-    // side-effect only, no note changes
-    ()
-}
+schema("TypeName", #{
+    fields: [ /* … */ ],
+    on_add_child: |parent_note, child_note| {
+        // side-effect only, no note changes
+        ()
+    }
+});
 ```
 
 ---
