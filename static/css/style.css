@@ -982,7 +982,7 @@ img {
 
 .template-card-desc {
   font-size: 0.9rem;
-  color: var(--sand-400);
+  color: var(--sand-500);
   line-height: 1.5;
   flex: 1;
 }
