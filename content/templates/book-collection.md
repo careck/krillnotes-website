@@ -1,16 +1,19 @@
 ---
 title: "Book Collection"
 description: "Track your reading list, current books, and past reads with star ratings."
+screenshot: "/templates/book_collection.screenshot.png"
 ---
 
 A personal library template. Create a **Library** note as the root, then add
 **Book** notes as children. The Library view groups your books by reading status
 and lets you sort them in several ways from the right-click menu.
 
+![Book Collection template screenshot](/templates/book_collection.screenshot.png)
+
 ## Downloads
 
 - [book_collection.rhai](/templates/book_collection.rhai) — import into Script Manager
-- [book_collection.krillnotes](/templates/book_collection.krillnotes) — sample workspace
+- [book_collection.krillnotes](/templates/book_collection.krillnotes.zip) — sample workspace
 
 ## How to use
 
