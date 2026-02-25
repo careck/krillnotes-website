@@ -1,0 +1,27 @@
+{{ define "main" }}
+<article class="docs-layout">
+  <h1>{{ .Title }}</h1>
+  {{ with .Params.description }}<p class="docs-description">{{ . }}</p>{{ end }}
+  <div class="docs-content">
+    {{ .Content }}
+  </div>
+  <div class="template-grid">
+    {{ range .Pages }}
+    <a class="template-card" href="{{ .RelPermalink }}">
+      <div class="template-card-thumb">
+        {{ if .Params.screenshot }}
+        <img src="{{ .Params.screenshot }}" alt="{{ .Title }} screenshot">
+        {{ end }}
+      </div>
+      <div class="template-card-body">
+        <h3 class="template-card-title">{{ .Title }}</h3>
+        {{ with .Params.description }}
+        <p class="template-card-desc">{{ . }}</p>
+        {{ end }}
+        <span class="template-card-link">View template →</span>
+      </div>
+    </a>
+    {{ end }}
+  </div>
+</article>
+{{ end }}
