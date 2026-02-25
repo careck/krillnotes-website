@@ -19,23 +19,25 @@ User scripts are managed through **Settings → Scripts**. The bundled system sc
 5. [on_save hook](#5-on_save-hook)
 6. [on_view hook](#6-on_view-hook)
 7. [on_add_child hook](#7-on_add_child-hook)
-8. [Display helpers](#8-display-helpers)
-9. [Query functions](#9-query-functions)
-10. [Introspection functions](#10-introspection-functions)
-11. [Tips and patterns](#11-tips-and-patterns)
-12. [Built-in script examples](#12-built-in-script-examples)
+8. [add_tree_action](#8-add_tree_action)
+9. [Display helpers](#9-display-helpers)
+10. [Query functions](#10-query-functions)
+11. [Introspection functions](#11-introspection-functions)
+12. [Tips and patterns](#12-tips-and-patterns)
+13. [Built-in script examples](#13-built-in-script-examples)
 
 ---
 
 ## 1. Script structure
 
-A script file is plain Rhai. The top-level call available is:
+A script file is plain Rhai. The top-level calls available are:
 
 | Call | Purpose |
 |---|---|
 | `schema(name, def)` | Register a note type, with optional inline hooks |
+| `add_tree_action(label, types, callback)` | Register a custom context-menu entry in the tree |
 
-Hooks (`on_save`, `on_view`, `on_add_child`) are defined as keys directly inside the map passed to `schema()` — not as separate top-level calls.
+Hooks (`on_save`, `on_view`, `on_add_child`) are defined as keys inside the `schema()` map. `add_tree_action` is a standalone top-level call — see [section 8](#8-add_tree_action).
 
 A minimal script that defines a type:
 
@@ -399,7 +401,39 @@ schema("TypeName", #{
 
 ---
 
-## 8. Display helpers
+## 8. add_tree_action
+
+`add_tree_action` registers a custom entry in the tree's right-click context menu. It is a standalone top-level call — not a key inside `schema()`.
+
+```rhai
+add_tree_action(label, allowed_types, callback)
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `label` | String | Menu item text shown to the user |
+| `allowed_types` | Array of Strings | Schema names for which the item appears |
+| `callback` | Closure `\|note\| { … }` | Called when the user clicks the item |
+
+The `note` argument has the same shape as in `on_save` — `id`, `node_type`, `title`, and `fields`.
+
+The callback can use query functions (`get_children`, `get_note`, etc.) to read workspace state. If it returns an array of note ID strings, the backend reorders those notes in the given order. Any other return value is ignored. The tree refreshes automatically after the callback completes.
+
+### Example — sort children alphabetically
+
+```rhai
+add_tree_action("Sort Children A→Z", ["Folder"], |note| {
+    let children = get_children(note.id);
+    children.sort_by(|a, b| a.title <= b.title);
+    children.map(|c| c.id)
+});
+```
+
+**Label uniqueness:** Labels must be unique per note type. If two scripts register the same label for the same type, the first-registered entry wins and a warning is printed.
+
+---
+
+## 9. Display helpers
 
 All helpers return an HTML string. All user-supplied text is HTML-escaped automatically.
 
@@ -531,7 +565,7 @@ divider()
 
 ---
 
-## 9. Query functions
+## 10. Query functions
 
 Query functions are available inside `on_view` hooks. They let you fetch related notes from the workspace without leaving the scripting layer.
 
@@ -576,7 +610,7 @@ Each note returned by the query functions has the same shape as the `note` map p
 
 ---
 
-## 10. Introspection functions
+## 11. Introspection functions
 
 These are available both at the top level and inside hooks.
 
@@ -601,7 +635,7 @@ let defs = get_schema_fields("Task");
 
 ---
 
-## 11. Tips and patterns
+## 12. Tips and patterns
 
 ### Null-coalescing with `??`
 
@@ -712,7 +746,7 @@ Note: this count only increases on add — it does not decrease when notes are d
 
 ---
 
-## 12. Built-in script examples
+## 13. Built-in script examples
 
 The following scripts ship with Krillnotes and can be studied as complete examples.
 
