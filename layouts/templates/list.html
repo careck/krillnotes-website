@@ -6,11 +6,11 @@
     {{ .Content }}
   </div>
   <div class="template-grid">
-    {{ range .Pages }}
+    {{ range .RegularPages }}
     <a class="template-card" href="{{ .RelPermalink }}">
       <div class="template-card-thumb">
         {{ if .Params.screenshot }}
-        <img src="{{ .Params.screenshot }}" alt="{{ .Title }} screenshot">
+        <img src="{{ .Params.screenshot | relURL }}" alt="{{ .Title }} screenshot">
         {{ end }}
       </div>
       <div class="template-card-body">
