@@ -10,24 +10,6 @@ User scripts are managed through **Settings → Scripts**. The bundled system sc
 
 ---
 
-## Table of Contents
-
-1. [Script structure](#1-script-structure)
-2. [Defining schemas](#2-defining-schemas)
-3. [Field types](#3-field-types)
-4. [Schema options](#4-schema-options)
-5. [on_save hook](#5-on_save-hook)
-6. [on_view hook](#6-on_view-hook)
-7. [on_add_child hook](#7-on_add_child-hook)
-8. [add_tree_action](#8-add_tree_action)
-9. [Display helpers](#9-display-helpers)
-10. [Query functions](#10-query-functions)
-11. [Introspection functions](#11-introspection-functions)
-12. [Tips and patterns](#12-tips-and-patterns)
-13. [Built-in script examples](#13-built-in-script-examples)
-
----
-
 ## 1. Script structure
 
 A script file is plain Rhai. The top-level calls available are:
@@ -84,13 +66,14 @@ Each entry in `fields` is a map:
 
 ```rhai
 #{
-    name:     "my_field",   // required — snake_case string
-    type:     "text",       // required — see Field types below
-    required: false,        // optional — default: false
-    can_view: true,         // optional — show in view mode (default: true)
-    can_edit: true,         // optional — show in edit mode (default: true)
-    options:  ["A", "B"],   // required for "select" fields
-    max:      5,            // required for "rating" fields
+    name:        "my_field",   // required — snake_case string
+    type:        "text",       // required — see Field types below
+    required:    false,        // optional — default: false
+    can_view:    true,         // optional — show in view mode (default: true)
+    can_edit:    true,         // optional — show in edit mode (default: true)
+    options:     ["A", "B"],   // required for "select" fields
+    max:         5,            // required for "rating" fields
+    target_type: "Project",    // optional for "note_link" fields — restricts picker to this schema type
 }
 ```
 
@@ -110,6 +93,7 @@ Each entry in `fields` is a map:
 | `"email"` | String | Email input with mailto link in view mode |
 | `"select"` | String | Dropdown; requires `options: [...]` |
 | `"rating"` | Float | Star rating; requires `max: N` (e.g. `max: 5`) |
+| `"note_link"` | String (note ID) or `null` | Reference to another note; edit mode shows an inline search picker, view mode renders the linked note's title as a clickable navigation link. Optional `target_type` restricts the picker to a specific schema type. |
 
 ### Reading field values in hooks
 
@@ -196,6 +180,8 @@ schema("TypeName", #{
 | `note.title` | String | Yes |
 | `note.fields` | Map | Yes (individual keys) |
 
+> **Tags are not available in `on_save`.** Tags are managed through the tag editor in the UI, not via hooks. To read a note's tags in a script, use an `on_view` hook instead — see [section 6](#6-on_view-hook).
+
 ### Example — derived title and computed field
 
 ```rhai
@@ -256,7 +242,17 @@ schema("Recipe", #{
 
 ## 6. on_view hook
 
-The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#8-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally. It is defined as an `on_view` key inside the `schema()` map.
+The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#9-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally. It is defined as an `on_view` key inside the `schema()` map.
+
+The note map in `on_view` has the following keys:
+
+| Key | Type | Notes |
+|---|---|---|
+| `note.id` | String | Read-only |
+| `note.node_type` | String | Read-only |
+| `note.title` | String | Read-only |
+| `note.fields` | Map | Read-only field values |
+| `note.tags` | Array of Strings | Tags assigned to this note; empty array if none |
 
 ```rhai
 schema("TypeName", #{
@@ -555,6 +551,14 @@ link_to(note)
 link_to(c)   // where c is a note from get_children() or get_notes_of_type()
 ```
 
+### `render_tags(tags)`
+
+Renders a `note.tags` array as coloured pill badges. Returns an empty string when the array is empty.
+
+```rhai
+render_tags(note.tags)
+```
+
 ### `divider()`
 
 A horizontal rule.
@@ -597,6 +601,26 @@ let all_tasks = get_notes_of_type("Task");
 let open = all_tasks.filter(|t| t.fields["status"] != "DONE");
 ```
 
+### `get_notes_for_tag(tags)`
+
+Returns all notes that carry **any** of the given tags (OR semantics, deduplicated). The argument is an array of tag strings.
+
+```rhai
+let related = get_notes_for_tag(note.tags);
+let others  = related.filter(|n| n.id != note.id);
+```
+
+### `get_notes_with_link(note_id)`
+
+Returns all notes that have a `note_link` field pointing to the given note ID. Use this to display backlinks — for example, all Tasks that reference a Project.
+
+```rhai
+let backlinks = get_notes_with_link(note.id);
+if backlinks.len() > 0 {
+    section("Linked from", list(backlinks.map(|n| link_to(n))))
+}
+```
+
 ### Note map shape
 
 Each note returned by the query functions has the same shape as the `note` map passed to hooks:
@@ -607,10 +631,35 @@ Each note returned by the query functions has the same shape as the `note` map p
 | `note.node_type` | String |
 | `note.title` | String |
 | `note.fields` | Map of field values |
+| `note.tags` | Array of Strings |
 
 ---
 
-## 11. Introspection functions
+## 11. Utility functions
+
+### `today()`
+
+Returns today's date as a `"YYYY-MM-DD"` string. Useful in `on_save` hooks to auto-stamp date fields or derive a date-prefixed title.
+
+```rhai
+schema("Journal", #{
+    fields: [
+        #{ name: "date",  type: "date",     can_edit: false },
+        #{ name: "entry", type: "textarea", required: true  },
+    ],
+    on_save: |note| {
+        if type_of(note.fields["date"]) != "string" || note.fields["date"] == "" {
+            note.fields["date"] = today();
+        }
+        note.title = note.fields["date"] + " — Journal";
+        note
+    }
+});
+```
+
+---
+
+## 12. Introspection functions
 
 These are available both at the top level and inside hooks.
 
@@ -635,7 +684,7 @@ let defs = get_schema_fields("Task");
 
 ---
 
-## 12. Tips and patterns
+## 13. Tips and patterns
 
 ### Null-coalescing with `??`
 
@@ -744,9 +793,60 @@ schema("ProjectFolder", #{
 
 Note: this count only increases on add — it does not decrease when notes are deleted or moved away. To maintain an accurate live count, use `on_view` with `get_children()` instead.
 
+### Displaying tags and related notes
+
+Use `render_tags` and `get_notes_for_tag` together in an `on_view` hook to show a note's tags and link to related notes:
+
+```rhai
+schema("Zettel", #{
+    fields: [
+        #{ name: "body", type: "textarea" },
+    ],
+    on_view: |note| {
+        let related = get_notes_for_tag(note.tags).filter(|n| n.id != note.id);
+        let related_section = if related.len() > 0 {
+            section("Related", list(related.map(|n| link_to(n))))
+        } else { "" };
+        stack([
+            render_tags(note.tags),
+            markdown(note.fields["body"] ?? ""),
+            related_section
+        ])
+    }
+});
+```
+
+### Backlinks with `get_notes_with_link`
+
+Use a `note_link` field on one type and display backlinks on the target type's `on_view` hook:
+
+```rhai
+// Task links to a Project
+schema("Task", #{
+    fields: [
+        #{ name: "project", type: "note_link", target_type: "Project" },
+    ],
+    on_save: |note| { note }
+});
+
+// Project shows all tasks that link to it
+schema("Project", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        let tasks = get_notes_with_link(note.id);
+        let tasks_section = if tasks.len() > 0 {
+            section("Tasks (" + tasks.len() + ")", list(tasks.map(|t| link_to(t))))
+        } else {
+            section("Tasks", text("No tasks yet."))
+        };
+        stack([fields(note), tasks_section])
+    }
+});
+```
+
 ---
 
-## 13. Built-in script examples
+## 14. Built-in script examples
 
 The following scripts ship with Krillnotes and can be studied as complete examples.
 
