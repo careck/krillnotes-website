@@ -10,6 +10,29 @@ User scripts are managed through **Settings → Scripts**. The bundled system sc
 
 ---
 
+## Note anatomy
+
+Every item in Krillnotes is a **note**. Notes form a tree: each note has exactly one parent (or is a root), and can have any number of children. The tree is how you build folders, projects, contact lists, and so on — by nesting compatible types inside each other.
+
+Each note has two layers of data:
+
+- **System fields** — always present: a unique `id`, a `node_type` (the schema name, e.g. `"Task"`), and a `title`.
+- **Schema fields** — defined by the `fields: [...]` list in your schema. Accessed in hooks as `note.fields["field_name"]`.
+
+Tags are a third, separate layer: assigned through the UI tag editor, not via schema fields.
+
+The exact fields available in each hook:
+
+| Field | `on_save` | `on_view` | `on_add_child` |
+|---|---|---|---|
+| `note.id` | ✓ | ✓ | ✓ |
+| `note.node_type` | ✓ | ✓ | ✓ |
+| `note.title` | ✓ writable | ✓ | ✓ |
+| `note.fields` | ✓ writable | ✓ | ✓ |
+| `note.tags` | — | ✓ | — |
+
+---
+
 ## 1. Script structure
 
 A script file is plain Rhai. The top-level calls available are:
