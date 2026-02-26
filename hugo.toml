@@ -13,8 +13,8 @@ title = 'Krillnotes'
     url = '/#features'
     weight = 1
   [[menu.main]]
-    name = 'Docs'
-    url = '/docs/'
+    name = 'Getting Started'
+    url = '/docs/getting-started/'
     weight = 2
   [[menu.main]]
     name = 'User Guide'
