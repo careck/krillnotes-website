@@ -65,9 +65,19 @@
       <p>Scripts can compute derived fields automatically — auto-generate titles, calculate durations, or set status badges on save.</p>
     </div>
     <div class="feature-card">
+      <div class="feature-icon">🏷️</div>
+      <h3>Tags</h3>
+      <p>Add free-form tags to any note from the info panel. A tag cloud in the sidebar gives a workspace-wide overview, and the search bar matches tags alongside titles and text fields.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Note links</h3>
+      <p>The <code>note_link</code> field type links one note to another. An inline search picker lets you find the target note; view mode renders a clickable navigation link. Query backlinks with <code>get_notes_with_link()</code>.</p>
+    </div>
+    <div class="feature-card">
       <div class="feature-icon">🔍</div>
       <h3>Fuzzy search</h3>
-      <p>Live search with debounced fuzzy matching across titles and text fields. Keyboard-navigable results that scroll into view.</p>
+      <p>Live search with debounced fuzzy matching across titles, text fields, and tags. Keyboard-navigable results that scroll into view.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">📦</div>
@@ -117,11 +127,11 @@
       <h2>Your notes, your types, your rules</h2>
       <p>Define custom note schemas with Rhai scripts. Add fields, hooks, and computed values — no recompilation needed.</p>
       <ul>
-        <li>Define schemas with typed fields (text, date, select, rating...)</li>
+        <li>Define schemas with typed fields (text, date, select, rating, note_link...)</li>
         <li>Auto-derive titles and computed fields with on_save hooks</li>
         <li>Custom view rendering with on_view hooks</li>
-        <li>Query notes by type, filter, and aggregate</li>
-        <li>Six example scripts ship out of the box</li>
+        <li>Query notes by type, tag, or backlink</li>
+        <li>Ready-to-use templates — book collection, Zettelkasten, and more</li>
       </ul>
       <a href="/docs/scripting/" class="btn btn-secondary" style="margin-top: var(--space-lg);">
         Read the Scripting Guide →
