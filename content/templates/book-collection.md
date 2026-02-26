@@ -13,7 +13,7 @@ and lets you sort them in several ways from the right-click menu.
 ## Downloads
 
 - [book_collection.rhai](/templates/book_collection.rhai) — import into Script Manager
-- [book_collection.krillnotes](/templates/book_collection.krillnotes.zip) — sample workspace
+- [book_collection.krillnotes.zip](/templates/book_collection.krillnotes.zip) — sample workspace
 
 ## How to use
 
