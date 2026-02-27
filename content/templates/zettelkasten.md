@@ -15,7 +15,7 @@ notes share those tags.
 ## Downloads
 
 - [zettelkasten.rhai](/templates/zettelkasten.rhai) — import into Script Manager
-- [zettelkasten.krillnotes.zip](/templates/zettelkasten.krillnotes.zip) — sample workspace
+- [zettelkasten.krillnotes](/templates/zettelkasten.krillnotes) — sample workspace
 
 ## How to use
 
