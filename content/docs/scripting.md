@@ -23,13 +23,13 @@ Tags are a third, separate layer: assigned through the UI tag editor, not via sc
 
 The exact fields available in each hook:
 
-| Field | `on_save` | `on_view` | `on_add_child` |
-|---|---|---|---|
-| `note.id` | ✓ | ✓ | ✓ |
-| `note.node_type` | ✓ | ✓ | ✓ |
-| `note.title` | ✓ writable | ✓ | ✓ |
-| `note.fields` | ✓ writable | ✓ | ✓ |
-| `note.tags` | — | ✓ | — |
+| Field | `on_save` | `on_view` | `on_hover` | `on_add_child` |
+|---|---|---|---|---|
+| `note.id` | ✓ | ✓ | ✓ | ✓ |
+| `note.node_type` | ✓ | ✓ | ✓ | ✓ |
+| `note.title` | ✓ writable | ✓ | ✓ | ✓ |
+| `note.fields` | ✓ writable | ✓ | ✓ | ✓ |
+| `note.tags` | ✓ read-only | ✓ | ✓ | ✓ read-only |
 
 ---
 
@@ -42,7 +42,7 @@ A script file is plain Rhai. The top-level calls available are:
 | `schema(name, def)` | Register a note type, with optional inline hooks |
 | `add_tree_action(label, types, callback)` | Register a custom context-menu entry in the tree |
 
-Hooks (`on_save`, `on_view`, `on_add_child`) are defined as keys inside the `schema()` map. `add_tree_action` is a standalone top-level call — see [section 8](#8-add_tree_action).
+Hooks (`on_save`, `on_view`, `on_hover`, `on_add_child`) are defined as keys inside the `schema()` map. `add_tree_action` is a standalone top-level call — see [section 9](#9-add_tree_action).
 
 A minimal script that defines a type:
 
@@ -79,6 +79,7 @@ schema("TypeName", #{
     // --- optional hooks ---
     on_save:      |note| { /* … */ note },
     on_view:      |note| { /* … */ text("") },
+    on_hover:     |note| { /* … */ field("…", "…") },
     on_add_child: |parent_note, child_note| { /* … */ #{ parent: parent_note, child: child_note } },
 });
 ```
@@ -89,14 +90,16 @@ Each entry in `fields` is a map:
 
 ```rhai
 #{
-    name:        "my_field",   // required — snake_case string
-    type:        "text",       // required — see Field types below
-    required:    false,        // optional — default: false
-    can_view:    true,         // optional — show in view mode (default: true)
-    can_edit:    true,         // optional — show in edit mode (default: true)
-    options:     ["A", "B"],   // required for "select" fields
-    max:         5,            // required for "rating" fields
-    target_type: "Project",    // optional for "note_link" fields — restricts picker to this schema type
+    name:          "my_field",   // required — snake_case string
+    type:          "text",       // required — see Field types below
+    required:      false,        // optional — default: false
+    can_view:      true,         // optional — show in view mode (default: true)
+    can_edit:      true,         // optional — show in edit mode (default: true)
+    show_on_hover: false,        // optional — show in hover tooltip (default: false)
+    options:       ["A", "B"],   // required for "select" fields
+    max:           5,            // required for "rating" fields
+    target_type:   "Project",    // optional for "note_link" fields — restricts picker to this schema type
+    allowed_types: ["image/*"],  // optional for "file" fields — restricts the file picker
 }
 ```
 
@@ -117,6 +120,7 @@ Each entry in `fields` is a map:
 | `"select"` | String | Dropdown; requires `options: [...]` |
 | `"rating"` | Float | Star rating; requires `max: N` (e.g. `max: 5`) |
 | `"note_link"` | String (note ID) or `null` | Reference to another note; edit mode shows an inline search picker, view mode renders the linked note's title as a clickable navigation link. Optional `target_type` restricts the picker to a specific schema type. |
+| `"file"` | String (UUID) or `null` | Attachment reference; optional `allowed_types` restricts the file picker to specific MIME types (e.g. `["image/*", "application/pdf"]`). In view mode images render as a thumbnail; other files show a paperclip icon and filename. |
 
 ### Reading field values in hooks
 
@@ -134,6 +138,26 @@ if type_of(d) == "string" && d != "" {
     // safe to use d as a string
 }
 ```
+
+`file` and `note_link` fields arrive as a UUID string when set, or as the unit value `()` when empty:
+
+```rhai
+let cover_uuid = note.fields["cover"];
+if cover_uuid != () {
+    display_image("field:cover", 400, "Cover image")
+}
+```
+
+### Inline images in `textarea` markdown
+
+`textarea` fields rendered as markdown support an inline image block syntax:
+
+```
+{{image: field:cover, width: 400, alt: My caption}}
+{{image: attach:photo.png}}
+```
+
+The `field:` prefix reads the UUID from a `file` field. The `attach:` prefix finds an attachment by filename. `width` and `alt` are optional. Images are resolved and base64-embedded server-side, so they appear synchronously without any extra loading step.
 
 ---
 
@@ -202,8 +226,9 @@ schema("TypeName", #{
 | `note.node_type` | String | No |
 | `note.title` | String | Yes |
 | `note.fields` | Map | Yes (individual keys) |
+| `note.tags` | Array of Strings | No |
 
-> **Tags are not available in `on_save`.** Tags are managed through the tag editor in the UI, not via hooks. To read a note's tags in a script, use an `on_view` hook instead — see [section 6](#6-on_view-hook).
+> **Tags are read-only in `on_save`.** Tags are managed through the tag editor in the UI. To read a note's tags in a script, use an `on_view` hook instead — see [section 6](#6-on_view-hook).
 
 ### Example — derived title and computed field
 
@@ -265,7 +290,7 @@ schema("Recipe", #{
 
 ## 6. on_view hook
 
-The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#9-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally. It is defined as an `on_view` key inside the `schema()` map.
+The `on_view` hook runs when a note is selected in the view panel. It receives the note map and must return an HTML string built with the [display helper functions](#10-display-helpers). The default field rendering is replaced entirely by this output; users still switch to edit mode normally. It is defined as an `on_view` key inside the `schema()` map.
 
 The note map in `on_view` has the following keys:
 
@@ -337,7 +362,60 @@ schema("MyType", #{
 
 ---
 
-## 7. on_add_child hook
+## 7. on_hover hook
+
+The `on_hover` hook runs when the user hovers a tree node for about 600 ms. It is defined as an `on_hover` key inside the `schema()` map. It receives the note map (same shape as `on_view`) and must return an HTML string built with [display helper functions](#10-display-helpers). The result is shown in a compact speech-bubble tooltip to the right of the tree panel.
+
+```rhai
+schema("TypeName", #{
+    fields: [ /* … */ ],
+    on_hover: |note| {
+        field("Status", note.fields["status"] ?? "-")
+    }
+});
+```
+
+When no `on_hover` hook is registered, the tooltip falls back to showing any fields marked with `show_on_hover: true`. If neither is present, no tooltip appears.
+
+### Simple path — `show_on_hover: true`
+
+For a quick single-field preview, mark the field with `show_on_hover: true` and skip the hook entirely. No extra round-trip is made — the value is already in the frontend.
+
+```rhai
+schema("Note", #{
+    fields: [
+        #{ name: "body", type: "textarea", required: false, show_on_hover: true },
+    ]
+});
+```
+
+Multiple `show_on_hover` fields are all shown, in definition order.
+
+### Power path — `on_hover` hook
+
+Use the hook when you need to run queries or compose richer content:
+
+```rhai
+schema("ProjectFolder", #{
+    fields: [],
+    on_hover: |note| {
+        let open   = get_children(note.id).filter(|c| c.fields["status"] != "DONE");
+        let closed = get_children(note.id).filter(|c| c.fields["status"] == "DONE");
+        stack([
+            field("Open",   open.len().to_string()),
+            field("Closed", closed.len().to_string()),
+        ])
+    }
+});
+```
+
+All [query functions](#11-query-functions) and [display helpers](#10-display-helpers) available in `on_view` are also available in `on_hover`. Keep the output concise — the tooltip has a maximum width and is not scrollable.
+
+> **Priority:** If a schema has an `on_hover` hook, it always takes precedence over `show_on_hover` field flags. The flags are only used when no hook is registered.
+
+---
+
+## 8. on_add_child hook
 
 The `on_add_child` hook runs whenever a note is created as a child — or moved via drag-and-drop — under a note whose schema defines the hook. It receives both the parent note and the child note, and can return modifications to either or both.
 
@@ -371,6 +449,7 @@ Both arguments have the same shape:
 | `note.node_type` | String | No (ignored if changed) |
 | `note.title` | String | Yes |
 | `note.fields` | Map | Yes (individual keys) |
+| `note.tags` | Array of Strings | No |
 
 ### When it fires
 
@@ -420,7 +499,7 @@ schema("TypeName", #{
 
 ---
 
-## 8. add_tree_action
+## 9. add_tree_action
 
 `add_tree_action` registers a custom entry in the tree's right-click context menu. It is a standalone top-level call — not a key inside `schema()`.
 
@@ -450,9 +529,19 @@ add_tree_action("Sort Children A→Z", ["Folder"], |note| {
 
 **Label uniqueness:** Labels must be unique per note type. If two scripts register the same label for the same type, the first-registered entry wins and a warning is printed.
 
+### Mutating notes from a tree action
+
+Tree action closures have access to two additional functions for writing to the workspace:
+
+**`create_note(parent_id, node_type)`** — creates a new note of the given type under the specified parent and returns a note map with schema defaults. All writes are applied atomically when the action completes; any error rolls everything back.
+
+**`update_note(note)`** — persists title and field changes on a note map back to the database. Works on the action target, notes from `get_children()`, or notes just created with `create_note()`.
+
+> `create_note` and `update_note` are **only available inside `add_tree_action` closures**. They are not available in `on_save`, `on_add_child`, or `on_view`. **`on_save` is not invoked** for notes created via `create_note` — set the title manually inside the closure.
+
 ---
 
-## 9. Display helpers
+## 10. Display helpers
 
 All helpers return an HTML string. All user-supplied text is HTML-escaped automatically.
 
@@ -582,6 +671,41 @@ Renders a `note.tags` array as coloured pill badges. Returns an empty string whe
 render_tags(note.tags)
 ```
 
+### `stars(value)` / `stars(value, max)`
+
+Renders a numeric rating as filled (★) and empty (☆) star characters. The default scale is 5; pass a second argument to use a different maximum. Returns `"—"` for a zero or negative value, matching the default `rating` field display.
+
+```rhai
+stars(note.fields["rating"] ?? 0)        // e.g. "★★★☆☆" for 3 out of 5
+stars(note.fields["score"] ?? 0, 10)     // out of 10
+```
+
+### `display_image(source, width, alt)`
+
+Embeds an attached image inline in `on_view` or `on_hover` output. The image is base64-encoded server-side and renders synchronously — no asynchronous loading.
+
+`source` is one of:
+- `"field:fieldName"` — reads the attachment UUID from a `file` field
+- `"attach:filename"` — finds an attachment by its original filename
+
+`width` and `alt` are optional (pass `0` or `""` to omit them).
+
+```rhai
+display_image("field:cover", 400, "Cover image")
+display_image("attach:diagram.png", 0, "")
+```
+
+### `display_download_link(source, label)`
+
+Renders a clickable download link for an attachment in `on_view` output. Clicking the link decrypts the file on demand and triggers a browser download.
+
+`source` follows the same `"field:fieldName"` / `"attach:filename"` convention as `display_image`. `label` is the link text shown to the user.
+
+```rhai
+display_download_link("field:document", "Download PDF")
+display_download_link("attach:report.xlsx", "Download Report")
+```
+
 ### `divider()`
 
 A horizontal rule.
@@ -592,9 +716,9 @@ divider()
 
 ---
 
-## 10. Query functions
+## 11. Query functions
 
-Query functions are available inside `on_view` hooks. They let you fetch related notes from the workspace without leaving the scripting layer.
+Query functions are available inside `on_view` hooks and `add_tree_action` closures. They let you fetch related notes from the workspace without leaving the scripting layer.
 
 ### `get_children(note_id)`
 
@@ -644,6 +768,35 @@ if backlinks.len() > 0 {
 }
 ```
 
+### `get_attachments(note_id)`
+
+Returns an array of attachment metadata maps for the given note ID. Available in `on_view`, `on_hover`, and `add_tree_action` closures.
+
+```rhai
+let attachments = get_attachments(note.id);
+```
+
+Each entry has the following shape:
+
+| Key | Type | Description |
+|---|---|---|
+| `id` | String (UUID) | Attachment ID |
+| `filename` | String | Original filename |
+| `mime_type` | String | MIME type (e.g. `"image/png"`) |
+| `size_bytes` | Integer | File size in bytes |
+
+```rhai
+schema("Article", #{
+    fields: [ /* … */ ],
+    on_view: |note| {
+        let files = get_attachments(note.id);
+        if files.len() == 0 { return text(""); }
+        let rows = files.map(|f| [f.filename, f.mime_type, f.size_bytes.to_string() + " B"]);
+        section("Attachments", table(["File", "Type", "Size"], rows))
+    }
+});
+```
+
 ### Note map shape
 
 Each note returned by the query functions has the same shape as the `note` map passed to hooks:
@@ -658,7 +811,7 @@ Each note returned by the query functions has the same shape as the `note` map p
 
 ---
 
-## 11. Utility functions
+## 12. Utility functions
 
 ### `today()`
 
@@ -682,7 +835,7 @@ schema("Journal", #{
 
 ---
 
-## 12. Introspection functions
+## 13. Introspection functions
 
 These are available both at the top level and inside hooks.
 
@@ -707,7 +860,7 @@ let defs = get_schema_fields("Task");
 
 ---
 
-## 13. Tips and patterns
+## 14. Tips and patterns
 
 ### Null-coalescing with `??`
 
@@ -867,9 +1020,36 @@ schema("Project", #{
 });
 ```
 
+### File attachments in on_view
+
+Use `display_image` for image attachments and `display_download_link` for other files:
+
+```rhai
+schema("Article", #{
+    fields: [
+        #{ name: "cover",   type: "file", allowed_types: ["image/*"] },
+        #{ name: "pdf",     type: "file", allowed_types: ["application/pdf"] },
+        #{ name: "body",    type: "textarea" },
+    ],
+    on_view: |note| {
+        let cover_section = if note.fields["cover"] != () {
+            display_image("field:cover", 600, "Cover")
+        } else { "" };
+        let pdf_section = if note.fields["pdf"] != () {
+            display_download_link("field:pdf", "Download article PDF")
+        } else { "" };
+        stack([
+            cover_section,
+            markdown(note.fields["body"] ?? ""),
+            pdf_section
+        ])
+    }
+});
+```
+
 ---
 
-## 14. Built-in script examples
+## 15. Built-in script examples
 
 The following scripts ship with Krillnotes and can be studied as complete examples.
 
