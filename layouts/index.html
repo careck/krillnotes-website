@@ -95,6 +95,21 @@
       <p>Runs on macOS, Linux, and Windows via Tauri v2. Native performance backed by Rust and SQLite.</p>
     </div>
     <div class="feature-card">
+      <div class="feature-icon">📎</div>
+      <h3>File attachments</h3>
+      <p>Attach any file to a note with drag-and-drop. Attachments are encrypted at rest alongside the workspace. Images show a thumbnail; all files can be downloaded on demand. Included in workspace export and import.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <h3>Hover tooltips</h3>
+      <p>Hovering a tree node for 600 ms shows a compact tooltip without navigating away. Mark any field with <code>show_on_hover: true</code> for instant inline previews, or define an <code>on_hover</code> hook to return fully custom HTML.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <h3>Internationalisation</h3>
+      <p>Ships with 7 language packs: English, German, French, Spanish, Japanese, Korean, and Simplified Chinese. Switch languages live from Settings — dates and numbers automatically follow the locale's conventions.</p>
+    </div>
+    <div class="feature-card">
       <div class="feature-icon">📋</div>
       <h3>Operations log</h3>
       <p>Every mutation is recorded in an immutable log — browse history, filter by type or date, and purge old entries.</p>
@@ -127,10 +142,12 @@
       <h2>Your notes, your types, your rules</h2>
       <p>Define custom note schemas with Rhai scripts. Add fields, hooks, and computed values — no recompilation needed.</p>
       <ul>
-        <li>Define schemas with typed fields (text, date, select, rating, note_link...)</li>
+        <li>Define schemas with typed fields (text, date, select, rating, note_link, file…)</li>
         <li>Auto-derive titles and computed fields with on_save hooks</li>
         <li>Custom view rendering with on_view hooks</li>
-        <li>Query notes by type, tag, or backlink</li>
+        <li>Hover tooltips via on_hover hook or show_on_hover field flags</li>
+        <li>Embed attached images with display_image() or {{image: …}} markdown syntax</li>
+        <li>Query notes by type, tag, backlink, or attachment metadata</li>
         <li>Ready-to-use templates — book collection, Zettelkasten, and more</li>
       </ul>
       <a href="/docs/scripting/" class="btn btn-secondary" style="margin-top: var(--space-lg);">
