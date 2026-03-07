@@ -1,3 +1,6 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
 {{ define "main" }}
 
 <!-- Hero -->
@@ -14,7 +17,7 @@
     <img src="{{ "images/krillnotesbanner.png" | relURL }}" alt="Krillnotes banner" class="hero-banner">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      Open source &middot; MIT License
+      Open source &middot; MPL-2.0
     </div>
     <h1>Notes that <span class="highlight">swim</span> the way you think</h1>
     <p class="hero-description">
@@ -87,7 +90,7 @@
     <div class="feature-card">
       <div class="feature-icon">🔒</div>
       <h3>Encrypted at rest</h3>
-      <p>All workspaces are AES-256 encrypted via SQLCipher. A password is required to create or open each workspace. Passwords can optionally be cached for the duration of a session. No account or cloud connection required — your data stays on your device.</p>
+      <p>All workspaces are AES-256 encrypted via SQLCipher with a randomly-generated key — you never type a workspace password. Your cryptographic identity manages access to all your workspaces. No account or cloud connection required — your data stays on your device.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">💻</div>
@@ -117,7 +120,22 @@
     <div class="feature-card">
       <div class="feature-icon">📋</div>
       <h3>Operations log</h3>
-      <p>Every mutation is recorded in an immutable log — browse history, filter by type or date, and purge old entries.</p>
+      <p>Every mutation is recorded in an immutable log — browse history, filter by type or date, and purge old entries. Each entry shows the author identity so you always know who made a change.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔑</div>
+      <h3>Identity management</h3>
+      <p>A single Ed25519 cryptographic identity unlocks all your workspaces. Unlock once per session with your passphrase — every bound workspace opens without an additional password. Export your identity as a portable <code>.swarmid</code> file to move to a new device.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📁</div>
+      <h3>Workspace manager</h3>
+      <p>A full workspace manager shows each workspace's name, size on disk, note count, and last-modified date — all readable without unlocking. Open, duplicate, create, or delete workspaces from a single panel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">↩️</div>
+      <h3>Undo / Redo</h3>
+      <p>Cmd+Z undoes the most recent note-tree action; Cmd+Shift+Z redoes it. Supports create, edit, delete, move, and reorder with a configurable history depth per workspace.</p>
     </div>
   </div>
 </section>
