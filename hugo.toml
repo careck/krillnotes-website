@@ -5,7 +5,7 @@ title = 'Krillnotes'
 [params]
   description = 'A local-first, hierarchical note-taking app. Scriptable, cross-platform, and yours.'
   tagline = 'Your notes. Your rules. Your device.'
-  github = 'https://github.com/careck/krillnotes'
+  github = 'https://github.com/2pisoftware/krillnotes'
 
 [menu]
   [[menu.main]]
@@ -30,7 +30,7 @@ title = 'Krillnotes'
     weight = 5
   [[menu.main]]
     name = 'GitHub'
-    url = 'https://github.com/careck/krillnotes'
+    url = 'https://github.com/2pisoftware/krillnotes'
     weight = 6
 
 [markup]
